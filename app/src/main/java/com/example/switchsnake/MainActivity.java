@@ -157,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     }
 
     private void showGameOver() {
-        Toast.makeText(this, "Game over! Restarting...", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Game over! Restarting...", Toast.LENGTH_SHORT).show();
         startGame();
     }
 
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
             runOnUiThread(this::checkGameStatus);
 
             try {
-                Thread.sleep(400L);
+                Thread.sleep(500L);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
