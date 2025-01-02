@@ -7,12 +7,14 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements Runnable {
@@ -21,12 +23,9 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     private int height = 20;
 
     private SnakeDirection snakeDirection = SnakeDirection.LEFT;
-    private boolean isGamePlaying = false;
 
-    private int[] snake_x= new int[1001];
-    private int[] snake_y= new int[1001];
+    private ArrayList<Pair<Integer, Integer>> snake = new ArrayList<>();
 
-    public int len=1;
     public int food_x=-1, food_y=-1;
 
     @Override
@@ -35,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         setContentView(R.layout.activity_main);
         build();
         startGame();
+        new Thread(this).start();
     }
 
     private void build() {
@@ -62,25 +62,21 @@ public class MainActivity extends AppCompatActivity implements Runnable {
     }
 
     private void startGame() {
-        if (isGamePlaying) {
-            return;
-        }
         Random random=new Random();
         int x=random.nextInt(height);
         int y=random.nextInt(width);
 
-        snake_x[0]=x;
-        snake_y[0]=y;
-        len = 1;
-
-        isGamePlaying = true;
-        new Thread(this).start();
+        snake.clear();
+        snake.add(new Pair<>(x, y));
+        Log.d("tagg-new", snake.toString());
     }
 
     private boolean isPlaceEmpty(int x, int y){
         if(x<0 || y<0 || x>=height || y>=width)return false;
-        for(int i=0;i<len;i++){
-            if(x==snake_x[i] && y==snake_y[i])return false;
+        for(int i=0;i<snake.size();i++){
+            if(x== snake.get(i).first && y== snake.get(i).second) {
+                return false;
+            }
         }
         return true;
     }
@@ -95,203 +91,138 @@ public class MainActivity extends AppCompatActivity implements Runnable {
         food_y=y;
     }
 
-    public void goLeft(){
-        if(!isPlaceEmpty(snake_x[0],snake_y[0]-1)) {
+    private void consumeFood() {
+        food_x = -1;
+        food_y = -1;
+    }
+
+    private void checkGameStatus() {
+        Pair<Integer, Integer> position = snake.get(0);
+        Log.d("tagg", position.first.toString() + "   " + position.second.toString());
+        if (position.first < 0 ||
+            position.second < 0 ||
+            position.first >= height ||
+            position.second >= width
+        ) {
             showGameOver();
-            return;
         }
+    }
 
-        if(food_x==snake_x[0]-1 && food_y==snake_y[0]){
-            for(int i=len;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_x[0]=food_x;
-            snake_y[0]=food_y;
-            len++;
-            food_x=-1;
-            food_y=-1;
+    public void goLeft(){
+        Pair<Integer, Integer> prevPosition = snake.get(0);
+        Pair<Integer, Integer> newPosition = new Pair<>(prevPosition.first, prevPosition.second - 1);
+        snake.add(0, newPosition);
 
+        if (newPosition.first == food_x && newPosition.second == food_y) {
+            consumeFood();
         } else {
-            for(int i=len-1;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_x[0]--;
+            snake.remove(snake.size() - 1);
         }
     }
 
     public void goRight(){
-        if (!isPlaceEmpty(snake_x[0],snake_y[0]+1)) {
-            showGameOver();
-            return;
-        }
+        Pair<Integer, Integer> prevPosition = snake.get(0);
+        Pair<Integer, Integer> newPosition = new Pair<>(prevPosition.first, prevPosition.second + 1);
+        snake.add(0, newPosition);
 
-        if(food_x==snake_x[0]+1 && food_y==snake_y[0]){
-            for(int i=len;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_x[0]=food_x;
-            snake_y[0]=food_y;
-            len++;
-            food_x=-1;
-            food_y=-1;
+        if (newPosition.first == food_x && newPosition.second == food_y) {
+            consumeFood();
         } else {
-
-            for(int i=len-1;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_x[0]++;
+            snake.remove(snake.size() - 1);
         }
     }
 
     public void goUp(){
-        if(!isPlaceEmpty(snake_x[0]-1,snake_y[0])) {
-            showGameOver();
-            return;
-        }
+        Pair<Integer, Integer> prevPosition = snake.get(0);
+        Pair<Integer, Integer> newPosition = new Pair<>(prevPosition.first - 1, prevPosition.second);
+        snake.add(0, newPosition);
 
-        if(food_x==snake_x[0] && food_y==snake_y[0]+1){
-            for(int i=len;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_x[0]=food_x;
-            snake_y[0]=food_y;
-            len++;
-            food_x=-1;
-            food_y=-1;
+        if (newPosition.first == food_x && newPosition.second == food_y) {
+            consumeFood();
         } else {
-            for(int i=len-1;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_y[0]++;
+            snake.remove(snake.size() - 1);
         }
     }
 
     public void goDown(){
-        if(!isPlaceEmpty(snake_x[0]+1,snake_y[0])) {
-            showGameOver();
-            return;
-        }
+        Pair<Integer, Integer> prevPosition = snake.get(0);
+        Pair<Integer, Integer> newPosition = new Pair<>(prevPosition.first + 1, prevPosition.second);
+        snake.add(0, newPosition);
 
-        if(food_x==snake_x[0] && food_y==snake_y[0]-1){
-            for(int i=len;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_x[0]=food_x;
-            snake_y[0]=food_y;
-            len++;
-            food_x=-1;
-            food_y=-1;
+        if (newPosition.first == food_x && newPosition.second == food_y) {
+            consumeFood();
         } else {
-
-            for(int i=len-1;i>0;i--){
-                snake_x[i]=snake_x[i-1];
-                snake_y[i]=snake_y[i-1];
-            }
-            snake_y[0]--;
+            snake.remove(snake.size() - 1);
         }
     }
 
     private void showGameOver() {
-        isGamePlaying = false;
-        Toast.makeText(this, "AAAA", Toast.LENGTH_SHORT).show();
-        try {
-            Thread.sleep(2500L);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        Toast.makeText(this, "Game over! Restarting...", Toast.LENGTH_LONG).show();
         startGame();
     }
 
-    public void draw(){
+    public void draw() {
         for(int i=0;i<height;i++)for(int j=0;j<width;j++) {
-            if(i==food_x && j==food_y)continue;
+            if(i==food_x && j==food_y) {
+                SwitchCompat x = findViewById(i*100+j);
+                x.setChecked(true);
+                x.setThumbTintList(ColorStateList.valueOf(Color.RED));
+                continue;
+            }
 
-            boolean f=false;
-            for(int k=0;k<len;k++) if(snake_x[k]==i && snake_y[k]==j){f=true;break;}
-            if(f)continue;
+            boolean isSnake = false;
+            for(int k=0;k<snake.size();k++) {
+                if(snake.get(k).first == i && snake.get(k).second ==j) {
+                    isSnake=true;
+                    break;
+                }
+            }
+            if(isSnake) {
+                SwitchCompat x = findViewById(i*100+j);
+                x.setChecked(true);
+                x.setThumbTintList(ColorStateList.valueOf(Color.GREEN));
+                continue;
+            }
 
             SwitchCompat x = findViewById(i*100+j);
             x.setChecked(false);
             x.setThumbTintList(ColorStateList.valueOf(Color.GRAY));
         }
-
-        if(food_x!=-1 && food_y!=-1) {
-            SwitchCompat x = findViewById(food_x*100+food_y);
-            x.setChecked(true);
-            x.setThumbTintList(ColorStateList.valueOf(Color.RED));
-        }
-
-
-        for(int i=0;i<len;i++){
-            SwitchCompat x = findViewById(snake_x[i]*100+snake_y[i]);
-            x.setChecked(true);
-            x.setThumbTintList(ColorStateList.valueOf(Color.GREEN));
-        }
-
-
     }
+
     public void score(){
         TextView tv=findViewById(R.id.textView);
-        tv.setText("Length: "+ len);
+        tv.setText("Length: "+ snake.size());
     }
 
     @Override
     public void run() {
-        while (isGamePlaying) {
-            if(food_x==-1 && food_y==-1)runOnUiThread(this::spawnFood);
+        while (true) {
+            if(food_x==-1 && food_y==-1) {
+                spawnFood();
+            }
             runOnUiThread(this::draw);
             runOnUiThread(this::score);
 
             switch (snakeDirection) {
                 case LEFT:
-                    runOnUiThread(this::goDown);
+                    runOnUiThread(this::goLeft);
                     break;
                 case TOP:
-                    runOnUiThread(this::goRight);
-                    break;
-                case RIGHT:
                     runOnUiThread(this::goUp);
                     break;
+                case RIGHT:
+                    runOnUiThread(this::goRight);
+                    break;
                 case BOTTOM:
-                    runOnUiThread(this::goLeft);
+                    runOnUiThread(this::goDown);
                     break;
             }
 
-//            if(food_x<snake_x[0]){
-//                if(isPlaceEmpty(snake_x[0]-1,snake_y[0]))runOnUiThread(this::goLeft);
-//                else if(isPlaceEmpty(snake_x[0],snake_y[0]-1))runOnUiThread(this::goDown);
-//                else if(isPlaceEmpty(snake_x[0],snake_y[0]+1))runOnUiThread(this::goUp);
-//                else if(isPlaceEmpty(snake_x[0]+1,snake_y[0]))runOnUiThread(this::goRight);
-//            }
-//            else if(food_x>snake_x[0]){
-//                if(isPlaceEmpty(snake_x[0]+1,snake_y[0]))runOnUiThread(this::goRight);
-//                else if(isPlaceEmpty(snake_x[0],snake_y[0]-1))runOnUiThread(this::goDown);
-//                else if(isPlaceEmpty(snake_x[0],snake_y[0]+1))runOnUiThread(this::goUp);
-//                else if(isPlaceEmpty(snake_x[0]-1,snake_y[0]))runOnUiThread(this::goLeft);
-//            }
-//
-//            else if(food_y>snake_y[0]){
-//                if(isPlaceEmpty(snake_x[0],snake_y[0]+1))runOnUiThread(this::goUp);
-//                else if(isPlaceEmpty(snake_x[0]+1,snake_y[0]))runOnUiThread(this::goRight);
-//                else if(isPlaceEmpty(snake_x[0]-1,snake_y[0]))runOnUiThread(this::goLeft);
-//                else if(isPlaceEmpty(snake_x[0],snake_y[0]-1))runOnUiThread(this::goDown);
-//            }
-//            else if(food_y<snake_y[0]){
-//                if(isPlaceEmpty(snake_x[0],snake_y[0]-1))runOnUiThread(this::goDown);
-//                else if(isPlaceEmpty(snake_x[0]+1,snake_y[0]))runOnUiThread(this::goRight);
-//                else if(isPlaceEmpty(snake_x[0]-1,snake_y[0]))runOnUiThread(this::goLeft);
-//                else if(isPlaceEmpty(snake_x[0],snake_y[0]+1))runOnUiThread(this::goUp);
-//            }
+            runOnUiThread(this::checkGameStatus);
 
             try {
-                Thread.sleep(333);
+                Thread.sleep(400L);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -311,10 +242,21 @@ public class MainActivity extends AppCompatActivity implements Runnable {
             float offsetX = event.getX() - startX;
             float offsetY = event.getY() - startY;
 
+            SnakeDirection newSnakeDirection;
             if (Math.abs(offsetX) > Math.abs(offsetY)) {
-                snakeDirection = offsetX > 0 ? SnakeDirection.RIGHT : SnakeDirection.LEFT;
+                newSnakeDirection = offsetX > 0 ? SnakeDirection.RIGHT : SnakeDirection.LEFT;
             } else {
-                snakeDirection = offsetY > 0 ? SnakeDirection.BOTTOM : SnakeDirection.TOP;
+                newSnakeDirection = offsetY > 0 ? SnakeDirection.BOTTOM : SnakeDirection.TOP;
+            }
+
+            if (newSnakeDirection == SnakeDirection.LEFT && snakeDirection != SnakeDirection.RIGHT) {
+                snakeDirection = newSnakeDirection;
+            } else if (newSnakeDirection == SnakeDirection.TOP && snakeDirection != SnakeDirection.BOTTOM) {
+                snakeDirection = newSnakeDirection;
+            } else if (newSnakeDirection == SnakeDirection.RIGHT && snakeDirection != SnakeDirection.LEFT) {
+                snakeDirection = newSnakeDirection;
+            } else if (newSnakeDirection == SnakeDirection.BOTTOM && snakeDirection != SnakeDirection.TOP) {
+                snakeDirection = newSnakeDirection;
             }
         }
         return true;
